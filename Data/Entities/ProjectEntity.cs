@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Data.Entities;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
 
 namespace WebApi.Entities;
 
@@ -34,6 +34,7 @@ public class ProjectEntity
 
 
     [ForeignKey(nameof(User))]
-    public string UserId { get; set; }
+
+    public string UserId { get; set; } = null!;
     public UserEntity User { get; set; } = null!;
 }

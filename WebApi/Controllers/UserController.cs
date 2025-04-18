@@ -1,0 +1,299 @@
+﻿using Data.Entities;
+using Data.Repositories;
+using Domain.Dtos;
+using Domain.Extentions;
+using Domain.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace WebApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
+public class UserController : ControllerBase
+{
+    private readonly IUserRepository _userRepository;
+    private readonly UserManager<UserEntity> _userManager;
+    private readonly PostalCodeRepository _postalCodeRepository;
+
+    public UserController(IUserRepository userRepository,UserManager<UserEntity> userManager,PostalCodeRepository postalCodeRepository)
+    {
+        _userRepository = userRepository;
+        _userManager = userManager;
+        _postalCodeRepository = postalCodeRepository;
+    }
+    
+
+    [HttpGet("profile")]
+    [Authorize]
+    
+    public async Task<IActionResult> GetProfile()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var result = await _userRepository.GetAsync(u => u.Id == userId);
+
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
+
+        var user = result.Result!;
+
+        var userProfile = new
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Profile = user.Profile != null ? new
+            {
+                FirstName = user.Profile.FirstName,
+                LastName = user.Profile.LastName,
+                PhoneNumber = user.Profile.PhoneNumber,
+                Image = user.Profile.Image
+            } : null,
+            Address = user.Address != null ? new
+            {
+                StreetName = user.Address.StreetName,
+                StreetNumber = user.Address.StreetNumber,
+                PostalCode = user.Address.PostalCode?.PostalCode,
+                City = user.Address.PostalCode?.City,
+                Country = user.Address.PostalCode?.Country
+            } : null
+        };
+
+        return Ok(userProfile);
+    }
+
+    [HttpPost("register")]
+    [AllowAnonymous]
+    
+    public async Task<IActionResult> Register([FromBody] UserRegistrationFormData formData)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var existingUser = await _userManager.FindByEmailAsync(formData.Email);
+        if (existingUser != null)
+            return Conflict(new { error = "A user with this email already exists" });
+
+        var postalCodeExists = await _postalCodeRepository.ExistsAsync(pc => pc.PostalCode == formData.PostalCode);
+
+        if (!postalCodeExists.Succeeded || postalCodeExists.StatusCode == 404)
+        {
+            var postalCodeEntity = new PostalCodeEntity
+            {
+                PostalCode = formData.PostalCode,
+                City = formData.City,
+                Country = formData.Country
+            };
+
+            var createPostalCodeResult = await _postalCodeRepository.AddAsync(postalCodeEntity);
+
+            if (!createPostalCodeResult.Succeeded)
+                return StatusCode(createPostalCodeResult.StatusCode ?? 500, new { error = createPostalCodeResult.Error });
+        }
+
+        // Create user
+        var userEntity = new UserEntity
+        {
+            UserName = formData.Email,
+            Email = formData.Email,
+            Profile = new UserProfileEntity
+            {
+                FirstName = formData.FirstName,
+                LastName = formData.LastName,
+                PhoneNumber = formData.PhoneNumber
+            },
+            Address = new UserAddressEntity
+            {
+                StreetName = formData.StreetName,
+                StreetNumber = formData.StreetNumber,
+                PostalCodeId = formData.PostalCode
+            }
+        };
+
+        var result = await _userRepository.AddAsync(userEntity, formData.Password);
+
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
+
+        return CreatedAtAction(nameof(GetProfile), new { id = userEntity.Id });
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    
+    public async Task<IActionResult> UpdateProfile([FromBody] UserProfileUpdateFormData formData)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+        var userResult = await _userRepository.GetAsync(u => u.Id == userId);
+
+        if (!userResult.Succeeded)
+            return StatusCode(userResult.StatusCode ?? 500, new { error = userResult.Error });
+
+        var user = userResult.Result;
+
+        if (user.Profile == null)
+            user.Profile = new UserProfileModel();
+
+        user.Profile.FirstName = formData.FirstName;
+        user.Profile.LastName = formData.LastName;
+        user.Profile.PhoneNumber = formData.PhoneNumber;
+
+        if (!string.IsNullOrEmpty(formData.Image))
+            user.Profile.Image = formData.Image;
+
+        // Update user
+        var updateResult = await _userRepository.UpdateAsync(user.MapTo<UserEntity>());
+
+        if (!updateResult.Succeeded)
+            return StatusCode(updateResult.StatusCode ?? 500, new { error = updateResult.Error });
+
+        return NoContent();
+    }
+
+    [HttpPut("address")]
+    [Authorize]
+    
+    public async Task<IActionResult> UpdateAddress([FromBody] UserAddressUpdateFormData formData)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var userResult = await _userRepository.GetAsync(u => u.Id == userId);
+
+        if (!userResult.Succeeded)
+            return StatusCode(userResult.StatusCode ?? 500, new { error = userResult.Error });
+
+        var user = userResult.Result;
+        var postalCodeExists = await _postalCodeRepository.ExistsAsync(pc => pc.PostalCode == formData.PostalCode);
+
+        if (!postalCodeExists.Succeeded || postalCodeExists.StatusCode == 404)
+        {
+            var postalCodeEntity = new PostalCodeEntity
+            {
+                PostalCode = formData.PostalCode,
+                City = formData.City,
+                Country = formData.Country
+            };
+
+            var createPostalCodeResult = await _postalCodeRepository.AddAsync(postalCodeEntity);
+
+            if (!createPostalCodeResult.Succeeded)
+                return StatusCode(createPostalCodeResult.StatusCode ?? 500, new { error = createPostalCodeResult.Error });
+        }
+
+        if (user.Address == null)
+            user.Address = new UserAddressModel();
+
+        user.Address.StreetName = formData.StreetName;
+        user.Address.StreetNumber = formData.StreetNumber;
+        
+        var updateResult = await _userRepository.UpdateAsync(user.MapTo<UserEntity>());
+
+        if (!updateResult.Succeeded)
+            return StatusCode(updateResult.StatusCode ?? 500, new { error = updateResult.Error });
+
+        return NoContent();
+    }
+
+    [HttpDelete]
+    [Authorize]
+    
+    public async Task<IActionResult> DeleteAccount()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var userResult = await _userRepository.GetAsync(u => u.Id == userId);
+        if (!userResult.Succeeded)
+            return StatusCode(userResult.StatusCode ?? 500, new { error = userResult.Error });
+
+        var user = userResult.Result;
+        var deleteResult = await _userRepository.DeleteAsync(user.MapTo<UserEntity>());
+        if (!deleteResult.Succeeded)
+            return StatusCode(deleteResult.StatusCode ?? 500, new { error = deleteResult.Error });
+
+        return NoContent();
+    }
+
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin")]
+    
+    public async Task<IActionResult> GetUserById(string id)
+    {
+        var result = await _userRepository.GetAsync(u => u.Id == id);
+
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
+
+        var user = result.Result;
+
+        var userProfile = new
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Profile = user.Profile != null ? new
+            {
+                FirstName = user.Profile.FirstName,
+                LastName = user.Profile.LastName,
+                PhoneNumber = user.Profile.PhoneNumber,
+                Image = user.Profile.Image
+            } : null,
+            Address = user.Address != null ? new
+            {
+                StreetName = user.Address.StreetName,
+                StreetNumber = user.Address.StreetNumber,
+                PostalCode = user.Address.PostalCode?.PostalCode,
+                City = user.Address.PostalCode?.City,
+                Country = user.Address.PostalCode?.Country
+            } : null
+        };
+
+        return Ok(userProfile);
+    }
+
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var result = await _userRepository.GetAllAsync(
+            sortByExpression: u => u.Email
+        );
+
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
+
+        var users = result.Result.Select(user => new
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Profile = user.Profile != null ? new
+            {
+                FirstName = user.Profile.FirstName,
+                LastName = user.Profile.LastName,
+                PhoneNumber = user.Profile.PhoneNumber
+            } : null
+        });
+
+        return Ok(users);
+    }
+}
