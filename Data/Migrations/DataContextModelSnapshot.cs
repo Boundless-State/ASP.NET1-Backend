@@ -365,6 +365,7 @@ namespace Data.Migrations
                     b.ToTable("Statuses");
                 });
 
+
             modelBuilder.Entity("Data.Entities.UserAddressEntity", b =>
                 {
                     b.HasOne("Data.Entities.PostalCodeEntity", "PostalCode")
@@ -393,6 +394,7 @@ namespace Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -416,6 +418,7 @@ namespace Data.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.HasOne("Data.Entities.UserEntity", null)
+
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -431,6 +434,7 @@ namespace Data.Migrations
                         .IsRequired();
 
                     b.HasOne("Data.Entities.UserEntity", null)
+
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -440,6 +444,7 @@ namespace Data.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.HasOne("Data.Entities.UserEntity", null)
+
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -462,6 +467,7 @@ namespace Data.Migrations
 
                     b.HasOne("Data.Entities.UserEntity", "User")
                         .WithMany()
+
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -486,6 +492,7 @@ namespace Data.Migrations
                 });
 
             modelBuilder.Entity("WebApi.Entities.StatusEntity", b =>
+
                 {
                     b.Navigation("Projects");
                 });

@@ -1,3 +1,4 @@
+
 using Data.Contexts;
 using Data.Entities;
 using Data.Repositories;
@@ -26,13 +27,6 @@ builder.Services.AddScoped<UserService>();
 
 builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentity<UserEntity, IdentityRole>().AddEntityFrameworkStores<DataContext>().AddDefaultTokenProviders();
-
-
-
-
-
-
-
 
 
 var app = builder.Build();

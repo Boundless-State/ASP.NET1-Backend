@@ -1,5 +1,7 @@
+
 ﻿using Data.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
 using Microsoft.EntityFrameworkCore;
 using WebApi.Entities;
 
@@ -14,5 +16,6 @@ public class DataContext(DbContextOptions<DataContext> options) : IdentityDbCont
     public virtual DbSet<UserProfileEntity> UserProfiles { get; set; }
     public virtual DbSet<UserAddressEntity> UserAddresses { get; set; }
     public virtual DbSet<PostalCodeEntity> PostalCodes { get; set; }
+
 
 }
