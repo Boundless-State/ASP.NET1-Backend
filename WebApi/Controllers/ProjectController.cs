@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq.Expressions;
 using Data.Entities;
 using WebApi.Entities;
+using Domain.Dtos.ProjectDtos;
+using Domain.Dtos.UserDtos;
 
 namespace WebApi.Controllers;
 

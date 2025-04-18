@@ -1,12 +1,15 @@
 ﻿using Data.Entities;
 using Data.Repositories;
-using Domain.Dtos;
+using Domain.Dtos.UserDtos;
 using Domain.Extentions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 
 namespace WebApi.Controllers;
 
@@ -18,18 +21,63 @@ public class UserController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly UserManager<UserEntity> _userManager;
     private readonly PostalCodeRepository _postalCodeRepository;
+    private readonly IConfiguration _configuration;
 
-    public UserController(IUserRepository userRepository,UserManager<UserEntity> userManager,PostalCodeRepository postalCodeRepository)
+    public UserController(IUserRepository userRepository,UserManager<UserEntity> userManager,PostalCodeRepository postalCodeRepository, IConfiguration configuration)
     {
         _userRepository = userRepository;
         _userManager = userManager;
         _postalCodeRepository = postalCodeRepository;
+        _configuration = configuration;
     }
-    
+
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Login([FromBody] UserLoginFormData formData)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(formData.Email);
+        if (user == null || !await _userManager.CheckPasswordAsync(user, formData.Password))
+            return Unauthorized(new { Error = "Felaktiga inloggningsuppgifter" });
+
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email!)
+        };
+
+        var roles = await _userManager.GetRolesAsync(user);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expires = DateTime.UtcNow.AddDays(7);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: expires,
+            signingCredentials: creds
+        );
+
+        return Ok(new
+        {
+            token = new JwtSecurityTokenHandler().WriteToken(token),
+            expiration = expires,
+            role = roles
+        });
+    }
+
 
     [HttpGet("profile")]
     [Authorize]
-    
     public async Task<IActionResult> GetProfile()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -70,7 +118,6 @@ public class UserController : ControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    
     public async Task<IActionResult> Register([FromBody] UserRegistrationFormData formData)
     {
         if (!ModelState.IsValid)
@@ -97,7 +144,6 @@ public class UserController : ControllerBase
                 return StatusCode(createPostalCodeResult.StatusCode ?? 500, new { error = createPostalCodeResult.Error });
         }
 
-        // Create user
         var userEntity = new UserEntity
         {
             UserName = formData.Email,
@@ -153,7 +199,6 @@ public class UserController : ControllerBase
         if (!string.IsNullOrEmpty(formData.Image))
             user.Profile.Image = formData.Image;
 
-        // Update user
         var updateResult = await _userRepository.UpdateAsync(user.MapTo<UserEntity>());
 
         if (!updateResult.Succeeded)
@@ -214,7 +259,6 @@ public class UserController : ControllerBase
 
     [HttpDelete]
     [Authorize]
-    
     public async Task<IActionResult> DeleteAccount()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -235,7 +279,6 @@ public class UserController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin")]
-    
     public async Task<IActionResult> GetUserById(string id)
     {
         var result = await _userRepository.GetAsync(u => u.Id == id);
