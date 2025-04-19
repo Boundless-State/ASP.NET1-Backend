@@ -62,6 +62,8 @@ builder.Services.AddScoped<IBaseRepository<UserEntity, UserModel>, UserRepositor
 builder.Services.AddScoped<PostalCodeRepository>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<StatusService>();
+builder.Services.AddScoped<ClientService>();
 
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
