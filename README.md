@@ -1,13 +1,16 @@
 An assignment for the class ASP.NET 1 in school.
 
 ------------------------------------------
-This project is still under construction.
+This API is made for controlling the login, logout,
+updating projects, addresses and users.
 ------------------------------------------
 
-Still to be added through branches:
-1. API/Controllers
-2. DTOs
-3. CRUD
-4. Also a frontend application for the back end application to run at
-5. install swagger to test my endpoints
-6. a Tokenhandler and also cache/cookies handling
+This was maed using 3 Sollutions:
+- WebApi
+- Data
+- Domain
+
+------------------------------------------
+
+It was a very fun project to write.
+To learn alot about the diferent dependencies and, injections.. and also using the best practice with code first.
