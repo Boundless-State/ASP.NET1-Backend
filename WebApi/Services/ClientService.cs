@@ -1,5 +1,5 @@
 ﻿using Data.Repositories;
-using Domain.Dtos;
+using Domain.Dtos.ProjectDtos;
 using Domain.Models;
 using System.Linq;
 

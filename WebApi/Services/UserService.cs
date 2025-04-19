@@ -1,6 +1,6 @@
 ﻿using Data.Entities;
 using Data.Repositories;
-using Domain.Dtos;
+using Domain.Dtos.UserDtos;
 using Domain.Extentions;
 using Domain.Models;
 using Microsoft.AspNetCore.Identity;

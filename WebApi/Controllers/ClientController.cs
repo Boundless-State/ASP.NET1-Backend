@@ -2,11 +2,9 @@
 using Domain.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq.Expressions;
-using Data.Entities;
+using Domain.Dtos.ProjectDtos;
 
 namespace WebApi.Controllers;
-
 
 [ApiController]
 [Route("api/[controller]")]
@@ -76,10 +74,8 @@ public class ClientController : ControllerBase
         return Ok(projects);
     }
 
-    
     [HttpPost]
     [Authorize]
-   
     public async Task<IActionResult> Create([FromBody] ClientFormData formData)
     {
         if (!ModelState.IsValid)

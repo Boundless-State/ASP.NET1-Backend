@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain.Dtos;
+namespace Domain.Dtos.UserDtos;
 
 public class UserFormData
 {
