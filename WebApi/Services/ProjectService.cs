@@ -4,7 +4,6 @@ using Data.Repositories;
 using Data.Entities;
 using WebApi.Entities;
 
-
 namespace Domain.Services
 {
     public class ProjectService
@@ -49,6 +48,27 @@ namespace Domain.Services
         public async Task<RepositoryResult> DeleteAsync(ProjectEntity project)
         {
             return await _projectRepository.DeleteAsync(project);
+        }
+
+        public async Task<RepositoryResult> DeleteByIdAsync(string id)
+        {
+            var entity = await _projectRepository.GetEntityByIdAsync(id);
+
+            if (entity == null)
+            {
+                return new RepositoryResult
+                {
+                    Succeeded = false,
+                    Error = "Project not found",
+                    StatusCode = 404
+                };
+            }
+
+            return await _projectRepository.DeleteAsync(entity);
+        }
+        public async Task<ProjectEntity?> GetEntityByIdAsync(string id)
+        {
+            return await _projectRepository.GetEntityByIdAsync(id);
         }
     }
 }

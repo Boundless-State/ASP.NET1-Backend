@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -16,6 +17,7 @@ namespace WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+
 public class UserController : ControllerBase
 {
     private readonly IUserRepository _userRepository;
@@ -45,9 +47,14 @@ public class UserController : ControllerBase
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email!)
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            
         };
+        if (!string.IsNullOrEmpty(user.ClientId))
+        {
+            claims.Add(new Claim("client_id", user.ClientId));
+        }
 
         var roles = await _userManager.GetRolesAsync(user);
         foreach (var role in roles)
@@ -163,11 +170,11 @@ public class UserController : ControllerBase
         };
 
         var result = await _userRepository.AddAsync(userEntity, formData.Password);
-
         if (!result.Succeeded)
             return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
 
-        return CreatedAtAction(nameof(GetProfile), new { id = userEntity.Id });
+        await _userManager.AddToRoleAsync(userEntity, "Member");
+        return CreatedAtAction(nameof(GetProfile), new { id = userEntity.Id }, new { userEntity.Email });
     }
 
     [HttpPut("profile")]

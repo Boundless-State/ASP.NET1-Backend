@@ -3,7 +3,6 @@ using Domain.Dtos;
 using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq.Expressions;
 using Data.Entities;
 using WebApi.Entities;
 using Domain.Dtos.ProjectDtos;
@@ -14,6 +13,7 @@ namespace WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class ProjectController : ControllerBase
 {
     private readonly ProjectService _projectService;
@@ -79,14 +79,14 @@ public class ProjectController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
     public async Task<IActionResult> Create([FromBody] ProjectCreateFormData formData)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var projectEntity = new ProjectEntity
+        var entity = new ProjectEntity
         {
+            Id = Guid.NewGuid().ToString(),
             ProjectName = formData.ProjectName,
             Description = formData.Description,
             Image = formData.Image,
@@ -98,42 +98,33 @@ public class ProjectController : ControllerBase
             UserId = formData.UserId
         };
 
-        var result = await _projectService.CreateAsync(projectEntity);
+        var result = await _projectService.CreateAsync(entity);
 
         if (!result.Succeeded)
             return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
 
-        return CreatedAtAction(nameof(GetById), new { id = projectEntity.Id }, new { id = projectEntity.Id });
+        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, new { id = entity.Id });
     }
 
     [HttpPut("{id}")]
-    [Authorize]
     public async Task<IActionResult> Update(string id, [FromBody] ProjectUpdateFormData formData)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var getResult = await _projectService.GetByIdAsync(id);
+        var entity = await _projectService.GetEntityByIdAsync(id);
+        if (entity == null)
+            return NotFound(new { error = "Projektet hittades inte." });
 
-        if (!getResult.Succeeded)
-            return StatusCode(getResult.StatusCode ?? 500, new { error = getResult.Error });
+        entity.ProjectName = formData.ProjectName ?? entity.ProjectName;
+        entity.Description = formData.Description ?? entity.Description;
+        entity.Image = formData.Image ?? entity.Image;
+        entity.StartDate = formData.StartDate ?? entity.StartDate;
+        entity.EndDate = formData.EndDate ?? entity.EndDate;
+        entity.Budget = formData.Budget ?? entity.Budget;
+        entity.StatusId = formData.StatusId ?? entity.StatusId;
 
-        var project = getResult.Result!;
-        var projectEntity = new ProjectEntity
-        {
-            Id = id,
-            ProjectName = formData.ProjectName ?? project.ProjectName,
-            Description = formData.Description ?? project.Description,
-            Image = formData.Image ?? project.Image,
-            StartDate = formData.StartDate ?? project.StartDate,
-            EndDate = formData.EndDate ?? project.EndDate,
-            Budget = formData.Budget ?? project.Budget,
-            StatusId = formData.StatusId ?? project.StatusId,
-            ClientId = project.ClientId,
-            UserId = project.UserId
-        };
-
-        var result = await _projectService.UpdateAsync(projectEntity);
+        var result = await _projectService.UpdateAsync(entity);
 
         if (!result.Succeeded)
             return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
@@ -142,22 +133,21 @@ public class ProjectController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize]
     public async Task<IActionResult> Delete(string id)
     {
-        var getResult = await _projectService.GetByIdAsync(id);
+        try
+        {
+            var result = await _projectService.DeleteByIdAsync(id);
 
-        if (!getResult.Succeeded)
-            return StatusCode(getResult.StatusCode ?? 500, new { error = getResult.Error });
+            if (!result.Succeeded)
+                return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
 
-        var project = getResult.Result!;
-        var projectEntity = new ProjectEntity { Id = id };
-
-        var result = await _projectService.DeleteAsync(projectEntity);
-
-        if (!result.Succeeded)
-            return StatusCode(result.StatusCode ?? 500, new { error = result.Error });
-
-        return NoContent();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Delete error: {ex.Message}");
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 }

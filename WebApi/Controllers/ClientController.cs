@@ -9,6 +9,7 @@ namespace WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class ClientController : ControllerBase
 {
     private readonly ClientRepository _clientRepository;
@@ -96,7 +97,7 @@ public class ClientController : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize]
-   
+
     public async Task<IActionResult> Update(string id, [FromBody] ClientFormData formData)
     {
         if (!ModelState.IsValid)
@@ -122,8 +123,8 @@ public class ClientController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize]
-  
+    [Authorize(Roles = "Admin")]
+
     public async Task<IActionResult> Delete(string id)
     {
         var getResult = await _clientRepository.GetAsync(c => c.Id == id);

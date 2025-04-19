@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Data.Entities;
+using System.ComponentModel.DataAnnotations;
 using WebApi.Entities;
 
 public class ClientEntity
@@ -7,4 +8,5 @@ public class ClientEntity
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string ClientName { get; set; } = null!;
     public ICollection<ProjectEntity> Projects { get; set; } = [];
+    public ICollection<UserEntity> Users { get; set; } = [];
 }

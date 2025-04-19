@@ -7,20 +7,20 @@ using WebApi.Entities;
 
 namespace WebApi.Controllers;
 
-
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class StatusController : ControllerBase
 {
-    private readonly BaseRepository<StatusEntity, StatusModel> _statusRepository;
+    private readonly IBaseRepository<StatusEntity, StatusModel> _statusRepository;
 
-    public StatusController(BaseRepository<StatusEntity, StatusModel> statusRepository)
+    public StatusController(IBaseRepository<StatusEntity, StatusModel> statusRepository)
     {
         _statusRepository = statusRepository;
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         var result = await _statusRepository.GetAllAsync();
@@ -32,6 +32,7 @@ public class StatusController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
         var result = await _statusRepository.GetAsync(s => s.Id == id);

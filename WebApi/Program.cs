@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Text;
+using WebApi.Entities;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +22,6 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.EnableAnnotations();
@@ -28,15 +29,35 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Skriv 'Bearer [din JWT-token]' nedan.",
+        Description = "JWT Authorization header. Skriv in 'Bearer + token'",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
+    c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Description = "API Key behövs i headern (x-api-key)",
+        Name = "x-api-key",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "ApiKey"
+    });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                },
+                In = ParameterLocation.Header
+            },
+            new List<string>()
+        },
         {
             new OpenApiSecurityScheme
             {
@@ -50,16 +71,27 @@ builder.Services.AddSwaggerGen(c =>
             new List<string>()
         }
     });
-    
+
+});
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+    });
 });
 
 
+builder.Services.AddScoped<IBaseRepository<StatusEntity, StatusModel>, StatusRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IBaseRepository<UserEntity, UserModel>, UserRepository>();
 builder.Services.AddScoped<ClientRepository>();
 builder.Services.AddScoped<RepositoryResult>();
 builder.Services.AddScoped<ProjectRepository>();
-builder.Services.AddScoped<IBaseRepository<UserEntity, UserModel>, UserRepository>();
 builder.Services.AddScoped<PostalCodeRepository>();
+builder.Services.AddScoped<StatusRepository>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<StatusService>();
@@ -93,18 +125,69 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+app.UseRouting();
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+app.UseMiddleware<ApiKeyMiddleware>();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "AlphaPortal API v1");
-    c.RoutePrefix = string.Empty;
-    
+    c.RoutePrefix = "swagger";
 });
 
-app.UseAuthentication();
-app.UseAuthorization();
-
 app.MapControllers();
+
+
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserEntity>>();
+
+//    string[] roles = new[] { "Admin", "Member" };
+
+//    foreach (var role in roles)
+//    {
+//        if (!await roleManager.RoleExistsAsync(role))
+//        {
+//            await roleManager.CreateAsync(new IdentityRole(role));
+//        }
+//    }
+
+//    var adminEmail = "admin@domain.com";
+//    var adminPassword = "Admin123!";
+
+//    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+//    if (adminUser == null)
+//    {
+//        adminUser = new UserEntity
+//        {
+//            UserName = adminEmail,
+//            Email = adminEmail
+//        };
+
+//        var createResult = await userManager.CreateAsync(adminUser, adminPassword);
+
+//        if (createResult.Succeeded)
+//        {
+//            await userManager.AddToRoleAsync(adminUser, "Admin");
+//        }
+//    }
+//    else
+//    {
+//        if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+//        {
+//            await userManager.AddToRoleAsync(adminUser, "Admin");
+//        }
+//    }
+//}
+
+
+
 app.Run();
