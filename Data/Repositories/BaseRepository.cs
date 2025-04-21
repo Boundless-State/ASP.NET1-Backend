@@ -25,6 +25,8 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
     protected readonly DbSet<TEntity> _table;
     protected readonly string _cacheKey;
 
+    //Jag tog hjälp av internet för att skapa denna cache manager..
+    //jag fastnade här väldigt mycket så jag utvecklade den igenom att jag frågade gpt och kollade projekt på internet för att skapa den rätta versionen samt att det fungerar i appen.
     protected BaseRepository(DataContext context, IMemoryCache cache)
     {
         _context = context;
@@ -148,6 +150,7 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
         return new RepositoryResult<TModel> { Succeeded = true, StatusCode = 200, Result = model };
     }
 
+    //Denna Task använde jag gpt för att skapa pga krångel ifrån min sida
     public virtual async Task<RepositoryResult<IEnumerable<TModel>>> GetAllAsync(bool orderByDescending = false, Expression<Func<TEntity, object>>? sortByExpression = null, Expression<Func<TEntity, bool>>? findByExpression = null, int setCacheTime = 5, params Expression<Func<TEntity, object>>[] includes)
     {
         var findByExpressionKey = findByExpression != null ? findByExpression.ToString() : "";
