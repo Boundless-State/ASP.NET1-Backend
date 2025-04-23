@@ -62,6 +62,10 @@ public class UserController : ControllerBase
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
+        //Här frågade jag faktiskt gpt för att få fram rätt kod för att skapa token, vilket jag tyckt varit svårt då det inte fungerade i frontend först när jag skrev det själv.
+        //Så gpt korrigerade den så den sedan fungerade.
+        //Jag har även lagt till en expiration för att token ska gå ut efter 7 dagar då frontend hela tiden slutade att fungera när jag testade.
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddDays(7);
@@ -101,22 +105,22 @@ public class UserController : ControllerBase
 
         var userProfile = new
         {
-            Id = user.Id,
-            Email = user.Email,
+            user.Id,
+            user.Email,
             Profile = user.Profile != null ? new
             {
-                FirstName = user.Profile.FirstName,
-                LastName = user.Profile.LastName,
-                PhoneNumber = user.Profile.PhoneNumber,
-                Image = user.Profile.Image
+                user.Profile.FirstName,
+                user.Profile.LastName,
+                user.Profile.PhoneNumber,
+                user.Profile.Image
             } : null,
             Address = user.Address != null ? new
             {
-                StreetName = user.Address.StreetName,
-                StreetNumber = user.Address.StreetNumber,
-                PostalCode = user.Address.PostalCode?.PostalCode,
-                City = user.Address.PostalCode?.City,
-                Country = user.Address.PostalCode?.Country
+                user.Address.StreetName,
+                user.Address.StreetNumber,
+                user.Address.PostalCode?.PostalCode,
+                user.Address.PostalCode?.City,
+                user.Address.PostalCode?.Country
             } : null
         };
 
@@ -297,22 +301,22 @@ public class UserController : ControllerBase
 
         var userProfile = new
         {
-            Id = user.Id,
-            Email = user.Email,
+            user.Id,
+            user.Email,
             Profile = user.Profile != null ? new
             {
-                FirstName = user.Profile.FirstName,
-                LastName = user.Profile.LastName,
-                PhoneNumber = user.Profile.PhoneNumber,
-                Image = user.Profile.Image
+                user.Profile.FirstName,
+                user.Profile.LastName,
+                user.Profile.PhoneNumber,
+                user.Profile.Image
             } : null,
             Address = user.Address != null ? new
             {
-                StreetName = user.Address.StreetName,
-                StreetNumber = user.Address.StreetNumber,
-                PostalCode = user.Address.PostalCode?.PostalCode,
-                City = user.Address.PostalCode?.City,
-                Country = user.Address.PostalCode?.Country
+                user.Address.StreetName,
+                user.Address.StreetNumber,
+                user.Address.PostalCode?.PostalCode,
+                user.Address.PostalCode?.City,
+                user.Address.PostalCode?.Country
             } : null
         };
 
@@ -334,13 +338,13 @@ public class UserController : ControllerBase
 
         var users = result.Result.Select(user => new
         {
-            Id = user.Id,
-            Email = user.Email,
+            user.Id,
+            user.Email,
             Profile = user.Profile != null ? new
             {
-                FirstName = user.Profile.FirstName,
-                LastName = user.Profile.LastName,
-                PhoneNumber = user.Profile.PhoneNumber
+                user.Profile.FirstName,
+                user.Profile.LastName,
+                user.Profile.PhoneNumber
             } : null
         });
 

@@ -22,7 +22,8 @@ public class ProjectController : ControllerBase
     {
         _projectService = projectService;
     }
-
+    //Här i de flesta metoder så la jag till Unknown i ClientName och StatusName för att undvika null referens fel,
+    //då jag hade problem med det i frontend en stund.
     [HttpGet]
     public async Task<IActionResult> GetAll(bool orderByDescending = false, string? sortBy = null)
     {
