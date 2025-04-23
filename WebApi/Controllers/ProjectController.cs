@@ -146,7 +146,7 @@ public class ProjectController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Delete error: {ex.Message}");
+            Console.WriteLine($"Delete error: {ex.Message}");
             return StatusCode(500, new { error = ex.Message });
         }
     }

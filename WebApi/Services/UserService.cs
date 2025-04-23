@@ -30,7 +30,7 @@ public class UserService
     {
         var existingUser = await _userManager.FindByEmailAsync(formData.Email);
         if (existingUser != null)
-            return new RepositoryResult { Succeeded = false, StatusCode = 409, Error = "A user with this email already exists" };
+            return new RepositoryResult { Succeeded = false, StatusCode = 409, Error = "Användaren finns redan" };
 
         var postalCodeExists = await _postalCodeRepository.ExistsAsync(pc => pc.PostalCode == formData.PostalCode);
         if (!postalCodeExists.Succeeded || postalCodeExists.StatusCode == 404)

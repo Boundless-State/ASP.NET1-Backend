@@ -22,6 +22,8 @@ var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
+
+//Jag kollade upp detta på nätet hur man kunde göra och detta fungerade bättre för mig men vet inte om jag har gjort rätt.. men det fungerar.
 builder.Services.AddSwaggerGen(c =>
 {
     c.EnableAnnotations();
